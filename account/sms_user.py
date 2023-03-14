@@ -25,3 +25,13 @@ class SmsUser:
         # _response = requests.request("POST", _url, json=payload, headers=headers)
         _response.raise_for_status()
         return _response.json()
+
+    def fee_endpoints(self, token):
+        _url = self.base_url + "/v1/fee-endpoints"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+        _response = requests.get(url=_url, headers=headers)
+        _response.raise_for_status()
+        return _response.json()
