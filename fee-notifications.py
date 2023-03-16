@@ -17,7 +17,7 @@ fee_api_pass = environ.get('FEE_API_PASS')
 engine = create_engine("mysql://fuelrod:fuelrod@localhost/fuelrod", echo=True, echo_pool=False, hide_parameters=True)
 
 apiUser = sms_user.SmsUser()
-feeProcessing = fee_payment.FeePayment(username=fee_api_user, password=fee_api_pass)
+feeProcessing = fee_payment.FeePayment(api_user=fee_api_user, api_pass=fee_api_pass)
 
 resp = apiUser.auth_token(username=api_username, password=api_pass)
 token = resp['accessToken']
