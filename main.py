@@ -26,4 +26,17 @@ fee_endpoints_resp = apiUser.fee_endpoints(token=token)
 fee_endpoints = fee_endpoints_resp['content']
 
 for endpoint in fee_endpoints:
-    result = feeProcessing.process_notifications(username=endpoint['username'], endpoint=endpoint['endpoint'])
+    print(f'processing data for {endpoint["username"]}')
+    results = []
+    page_number = 1
+    while True:
+        print(f"Using next page cursor `{page_number}`")
+        resp = feeProcessing.process_notifications(username=endpoint['username'], endpoint=endpoint['endpoint'],
+                                                   page_number=page_number)
+        results.extend(resp['data'])
+        page_number = page_number + 1
+        if resp['next_page_url'] is None:
+            print("Exiting loop, no more data")
+            break
+
+    print(len(results))

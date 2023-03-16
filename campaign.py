@@ -12,13 +12,6 @@ load_dotenv(verbose=True)
 engine = create_engine("mysql://fuelrod:fuelrod@localhost/fuelrod", echo=True, echo_pool=False, hide_parameters=True)
 
 messages = msg.FuelrodQueue(db_engine=engine)
-apiUser = sms_user.SmsUser()
-
-api_username = environ.get('API_USER')
-api_pass = environ.get('API_PASS')
-
-resp = apiUser.auth_token(username=api_username, password=api_pass)
-token = resp['accessToken']
 
 campaign = messages.has_campaign(campaign_status=MessageStatus.IN_PROGRESS)
 

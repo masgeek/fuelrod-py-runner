@@ -16,21 +16,18 @@ class FeePayment:
         self.api_pass = api_pass
         self.my_logger = my_logger
 
-    def process_notifications(self, username, endpoint):
+    def process_notifications(self, username, endpoint, page_number=1):
         # _url = endpoint + "/api/sms-notifications
-        _url = "http://fee-processor.test/api/sms-notifications"
+        _url = f"http://fee-processor.test/api/sms-notifications/username/{username}?page={page_number}"
+        token = self._get_api_token(endpoint, username)
 
-        token = self._read_token_file(endpoint, username)
-
-        print(token)
-        return token
-        # headers = {
-        #     "Content-Type": "application/json",
-        #     "Authorization": f"Bearer {token}"
-        # }
-        # _response = requests.get(url=_url, headers=headers)
-        # _response.raise_for_status()
-        # return _response.json()
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+        _response = requests.get(url=_url, headers=headers)
+        _response.raise_for_status()
+        return _response.json()
 
     @cached(cache=cache)
     def _get_api_token(self, endpoint, username):
@@ -39,6 +36,9 @@ class FeePayment:
             "username": self.api_user,
             "password": self.api_pass
         }
+        token = self._read_token_file(endpoint, username)
+        if token is not None:
+            return token
 
         try:
             _response = requests.post(url=_url, json=payload, verify=False)
@@ -47,11 +47,13 @@ class FeePayment:
             # save to external json file
             with open(f'fee_token/{username}-fee-token.json', 'w') as json_file_obj:
                 json.dump(resp['data'], json_file_obj, indent=4)
-            return resp['data']['token']
+            token = resp['data']['token']
         except HTTPError as http_err:
             print(f'Unable to authenticate user {http_err}')
         except Exception as err:
             print(f'Other error occurred {err}')
+
+        return token
 
     def _read_token_file(self, endpoint, username):
         token_json_file = f'fee_token/{username}-fee-token.json'
@@ -69,7 +71,7 @@ class FeePayment:
                 token_expired = current_time > expiry_time
                 if token_expired:
                     print(f'No token file or token has expired for {username},  fetching new one')
-                    token = self._get_api_token(endpoint, username)
+
         except Exception as err:
             print(f'Error reading {token_json_file} file {err}')
 
