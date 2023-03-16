@@ -31,30 +31,36 @@ def fetch_notifications(username, end_point, page_no):
     yield _results
 
 
-def trial():
-    for endpoint in fee_endpoints:
-        print(f'processing data for {endpoint["username"]}')
-        results = []
-        page_number = 1
-        next_page_url = None
-        while True:
-            print(f"Processing message on page `{page_number}`")
-            yield_resp = feeProcessing.process_notifications(username=endpoint['username'],
-                                                             endpoint=endpoint['endpoint'],
-                                                             page_number=page_number)
-
-            for resp_val in yield_resp:
-                results.extend(resp_val['data'])
-                next_page_url = resp_val['next_page_url']
-                page_number = page_number + 1
-
-            if next_page_url is None:
-                print("Exiting loop, no more data")
-                break
-
-        print(len(results))
-
-
 if __name__ == "__main__":
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.submit(trial())
+    for endpoint in fee_endpoints:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            print(f'processing data for {endpoint["username"]}')
+            results = []
+            page_number = 1
+            next_page_url = None
+            while True:
+                print(f"Processing message on page `{page_number}`")
+                # yield_resp = feeProcessing.process_notifications(username=endpoint['username'],
+                #                                                  endpoint=endpoint['endpoint'],
+                #                                                  page_number=page_number)
+
+                futures = [executor.submit(fetch_notifications(
+                    username=endpoint['username'],
+                    end_point=endpoint['endpoint'],
+                    page_no=page_number))]
+
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        results = future.result()
+                    except Exception as exc:
+                        print(f"Exception: {exc}")
+                    
+                    # for resp_val in yield_resp:
+                    #     results.extend(resp_val['data'])
+                    #     next_page_url = resp_val['next_page_url']
+                    #     page_number = page_number + 1
+
+                    if next_page_url is None:
+                        print("Exiting loop, no more data")
+                        break
+                print(len(results))
