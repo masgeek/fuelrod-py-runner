@@ -25,9 +25,10 @@ class FeePayment:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}"
         }
-        _response = requests.get(url=_url, headers=headers)
-        _response.raise_for_status()
-        return _response.json()
+        with requests.Session() as session:
+            _response = session.get(url=_url, headers=headers)
+            _response.raise_for_status()
+            yield _response.json()
 
     @cached(cache=cache)
     def _get_api_token(self, endpoint, username):
