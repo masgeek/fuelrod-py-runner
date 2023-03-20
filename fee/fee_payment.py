@@ -16,9 +16,9 @@ class FeePayment:
         self.api_pass = api_pass
         self.my_logger = my_logger
 
-    def process_notifications(self, username, endpoint, page_number=1):
+    def process_notifications(self, username, endpoint, page_size=200, page_number=1):
         # _url = endpoint + "/api/sms-notifications
-        _url = f"http://fee-processor.test/api/sms-notifications/username/{username}?page={page_number}"
+        _url = f"http://fee-processor.test/api/sms-notifications/username/{username}/{page_size}?page={page_number}"
         token = self._get_api_token(endpoint, username)
 
         headers = {
@@ -46,7 +46,7 @@ class FeePayment:
             _response.raise_for_status()
             resp = _response.json()
             # save to external json file
-            with open(f'fee_token/{username}-fee-token.json', 'w') as json_file_obj:
+            with open(f'token/{username}-fee-token.json', 'w') as json_file_obj:
                 json.dump(resp['data'], json_file_obj, indent=4)
             token = resp['data']['token']
         except HTTPError as http_err:
@@ -57,7 +57,7 @@ class FeePayment:
         return token
 
     def _read_token_file(self, endpoint, username):
-        token_json_file = f'fee_token/{username}-fee-token.json'
+        token_json_file = f'token/{username}-fee-token.json'
         token = None
         try:
             with open(token_json_file, 'r') as json_file_obj:
@@ -71,6 +71,7 @@ class FeePayment:
 
                 token_expired = current_time > expiry_time
                 if token_expired:
+                    token = None
                     print(f'No token file or token has expired for {username},  fetching new one')
 
         except Exception as err:

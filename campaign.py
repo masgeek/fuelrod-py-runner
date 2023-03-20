@@ -1,11 +1,8 @@
-from os import environ
-
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
 from MessageStatus import MessageStatus
-from account import sms_user
-from campaign import campaign_queue as msg
+from fuelrod import campaign_queue as msg
 
 load_dotenv(verbose=True)
 

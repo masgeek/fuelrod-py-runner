@@ -12,17 +12,12 @@ class SmsUser:
 
     def auth_token(self, username, password):
         _url = self.base_url + "/v1/account/auth"
-        headers = {
-            "Content-Type": "application/json",
-        }
 
         payload = {
             "username": username,
             "password": password
         }
-
         _response = requests.post(url=_url, json=payload)
-        # _response = requests.request("POST", _url, json=payload, headers=headers)
         _response.raise_for_status()
         return _response.json()
 
