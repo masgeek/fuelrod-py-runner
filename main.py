@@ -46,44 +46,6 @@ def send_sms(sms_message):
     response.raise_for_status()
 
 
-if __name__ == "__mains__":
-    for endpoint in fee_endpoints:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            all_results = []
-            page_number = 1
-            next_page_url = None
-            while True:
-                print(f"Processing message on page `{page_number}`")
-                # yield_resp = feeProcessing.process_notifications(username=endpoint['username'],
-                #                                                  endpoint=endpoint['endpoint'],
-                #                                                  page_number=page_number),
-
-                futures = [
-                    executor.submit(process_sms_notifications,
-                                    endpoint['username'],
-                                    endpoint['endpoint'],
-                                    page_number)
-                ]
-
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        results = future.result()
-                        resp_val = next(next(results))
-                        next_page_url = resp_val['next_page_url']
-                        page_number = page_number + 1
-                        all_results.extend(resp_val['data'])
-                    except Exception as exc:
-                        print(f"Exception: {exc}")
-                    # for resp_val in yield_resp:
-                    #     results.extend(resp_val['data'])
-                    #     next_page_url = resp_val['next_page_url']
-                    #     page_number = page_number + 1
-                print(next_page_url)
-                if next_page_url is None:
-                    print(f"Exiting loop, no more data last pge was {page_number} for {endpoint['username']}")
-                    break
-        print(f"Length of results is {len(all_results)}")
-
 if __name__ == "__main__":
     for fee_endpoint in fee_endpoints:
         __username = fee_endpoint['username']
