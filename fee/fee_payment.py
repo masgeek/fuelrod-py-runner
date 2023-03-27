@@ -17,8 +17,8 @@ class FeePayment:
         self.my_logger = my_logger
 
     def process_notifications(self, username, endpoint, page_size=200, page_number=1):
-        # _url = endpoint + "/api/sms-notifications
-        _url = f"http://fee-processor.test/api/sms-notifications/username/{username}/{page_size}?page={page_number}"
+
+        _url = f"{endpoint}/api/sms-notifications/username/{username}/{page_size}?page={page_number}"
         token = self._get_api_token(endpoint, username)
 
         headers = {
@@ -30,9 +30,28 @@ class FeePayment:
             _response.raise_for_status()
             yield _response.json()
 
+    def update_sms_notification(self, endpoint, username, message_id):
+
+        _url = f"{endpoint}/api/sms-notifications/{message_id}"
+        token = self._get_api_token(endpoint, username)
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+
+        payload = {
+            "processed": True
+        }
+
+        with requests.Session() as session:
+            _response = session.get(url=_url, json=payload, headers=headers)
+            _response.raise_for_status()
+            yield _response.json()
+
     @cached(cache=cache)
     def _get_api_token(self, endpoint, username):
-        _url = endpoint + "/api/token"
+        _url = f"{endpoint}/api/token"
         payload = {
             "username": self.api_user,
             "password": self.api_pass
@@ -42,7 +61,7 @@ class FeePayment:
             return token
 
         try:
-            _response = requests.post(url=_url, json=payload, verify=False)
+            _response = requests.post(url=_url, json=payload)
             _response.raise_for_status()
             resp = _response.json()
             # save to external json file
