@@ -1,7 +1,4 @@
 import requests
-import sqlalchemy
-from sqlalchemy import desc, asc
-from sqlalchemy.orm import sessionmaker
 
 
 class SmsUser:

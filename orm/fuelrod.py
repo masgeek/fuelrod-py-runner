@@ -1,8 +1,6 @@
-from typing import Any
-
 from sqlalchemy import Column, DECIMAL, Date, DateTime, ForeignKeyConstraint, Index, String, Table, Text, text
 from sqlalchemy.dialects.mysql import BIGINT, BIT, INTEGER
-from sqlalchemy.orm import declarative_base, relationship, Relationship
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 metadata = Base.metadata

@@ -1,3 +1,6 @@
+import logging.config
+from os import environ, path
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
@@ -7,6 +10,22 @@ from fuelrod import campaign_queue as msg
 load_dotenv(verbose=True)
 
 engine = create_engine("mysql://fuelrod:fuelrod@localhost/fuelrod", echo=True, echo_pool=False, hide_parameters=True)
+
+log_level = environ.get('LOG_LEVEL', 'INFO')
+
+logfileError = path.join(path.dirname(path.abspath(__file__)), "logs/errors.log")
+logfileInfo = path.join(path.dirname(path.abspath(__file__)), "logs/info.log")
+
+c_handler = logging.StreamHandler()
+f_handler = logging.FileHandler(logfileError, 'w', 'utf-8')
+f_info_handler = logging.FileHandler(logfileInfo, 'w', 'utf-8')
+c_handler.setLevel(logging.DEBUG)
+f_info_handler.setLevel(logging.INFO)
+f_handler.setLevel(logging.ERROR)
+
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
+                    handlers=[c_handler, f_handler, f_info_handler],
+                    level=log_level)
 
 messages = msg.FuelrodQueue(db_engine=engine)
 

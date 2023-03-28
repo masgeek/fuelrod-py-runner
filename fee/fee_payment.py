@@ -1,17 +1,17 @@
-from datetime import datetime
-from calendar import timegm
-import string
-import requests
 import json
+import string
+from calendar import timegm
+from datetime import datetime
+
+import requests
 from cachetools import cached, TTLCache
 from requests import HTTPError
-import os, time
 
 cache = TTLCache(maxsize=100, ttl=86400)
 
 
 class FeePayment:
-    def __init__(self, api_user: string, api_pass: string, my_logger: object = None):
+    def __init__(self, api_user: string, api_pass: string, my_logger=None):
         self.api_user = api_user
         self.api_pass = api_pass
         self.my_logger = my_logger
@@ -69,9 +69,9 @@ class FeePayment:
                 json.dump(resp['data'], json_file_obj, indent=4)
             token = resp['data']['token']
         except HTTPError as http_err:
-            print(f'Unable to authenticate user {http_err}')
+            self.my_logger.error(f'Unable to authenticate user {http_err}')
         except Exception as err:
-            print(f'Other error occurred {err}')
+            self.my_logger.error(f'Other error occurred {err}')
 
         return token
 
@@ -91,9 +91,9 @@ class FeePayment:
                 token_expired = current_time > expiry_time
                 if token_expired:
                     token = None
-                    print(f'No token file or token has expired for {username},  fetching new one')
+                    self.my_logger.info(f'No token file or token has expired for {username},  fetching new one')
 
         except Exception as err:
-            print(f'Error reading {token_json_file} file {err}')
+            self.my_logger.error(f'Error reading {token_json_file} file {err}')
 
         return token

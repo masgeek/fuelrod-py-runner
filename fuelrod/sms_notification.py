@@ -1,8 +1,4 @@
 import requests
-import sqlalchemy
-from sqlalchemy import desc, asc
-from sqlalchemy.orm import sessionmaker
-from fee import fee_payment
 
 
 class SmsNotification:

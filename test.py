@@ -1,5 +1,4 @@
 import typer
-from os import getenv
 
 app = typer.Typer()
 

@@ -1,5 +1,5 @@
 import sqlalchemy
-from sqlalchemy import desc, asc
+from sqlalchemy import desc
 from sqlalchemy.orm import sessionmaker
 
 from MessageStatus import MessageStatus
