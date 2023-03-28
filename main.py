@@ -1,4 +1,5 @@
 import json
+import os
 from os import environ
 
 import concurrent.futures
@@ -7,12 +8,13 @@ import requests
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-from fuelrod import sms_user
+from fuelrod import sms_user, sms_notification
 from fee import fee_payment
 
 load_dotenv(verbose=True)
-api_username = environ.get('API_USER')
-api_pass = environ.get('API_PASS')
+fuelrod_base_url = environ.get('SMS_BASE_URL')
+api_username = environ.get('SMS_API_USER')
+api_pass = environ.get('SMS_API_PASS')
 
 fee_api_user = environ.get('FEE_API_USER')
 fee_api_pass = environ.get('FEE_API_PASS')
@@ -28,6 +30,8 @@ token = resp['accessToken']
 fee_endpoints_resp = apiUser.fee_endpoints(token=token)
 fee_endpoints = fee_endpoints_resp['content']
 
+smsNotification = sms_notification.SmsNotification(base_url=fuelrod_base_url, token=token)
+
 
 def process_sms_notifications(username, end_point, page_size, page_no=1):
     print(f'processing data for {username} for page number {page_no}')
@@ -37,13 +41,10 @@ def process_sms_notifications(username, end_point, page_size, page_no=1):
                                               page_number=page_no)
 
 
-def send_sms(sms_message):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}"
-    }
-    response = requests.post('http://localhost:9000/api/v1/sms/fee-notification', headers=headers, json=sms_message)
-    response.raise_for_status()
+def update_sent_message(sms_future):
+    sms = sms_future.result()
+    print(json.dumps(sms, indent=4))
+    feeProcessing.update_sms_notification(message_id=sms['id'], endpoint=sms['endpoint'])
 
 
 if __name__ == "__main__":
@@ -77,17 +78,14 @@ if __name__ == "__main__":
                     print(f"Exception: {exc}")
         print(f"Size of results is {len(all_results)}")
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
             # Process each item in the dictionary asynchronously and send the result to the REST API
             for message in all_results:
                 sent_messages.append({
                     "endpoint": __end_point,
                     "username": __username,
                     "id": message['id']
-                }
-                )
+                })
 
-                _future = executor.submit(send_sms, message)
-
-        for sent in sent_messages:
-            print(sent['endpoint'])
+                _result = executor.submit(smsNotification.send_sms, message, __end_point)
+                _result.add_done_callback(update_sent_message)

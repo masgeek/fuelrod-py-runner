@@ -2,31 +2,27 @@ import requests
 import sqlalchemy
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import sessionmaker
+from fee import fee_payment
 
 
 class SmsNotification:
 
-    def __init__(self, db_engine=None, base_url='http://localhost:9000/api'):
-        self.db_engine = db_engine
+    def __init__(self, base_url, token):
         self.base_url = base_url
+        self.token = token
 
-    def auth_token(self, username, password):
-        _url = self.base_url + "/v1/account/auth"
-
-        payload = {
-            "username": username,
-            "password": password
-        }
-        _response = requests.post(url=_url, json=payload)
-        _response.raise_for_status()
-        return _response.json()
-
-    def fee_endpoints(self, token):
-        _url = self.base_url + "/v1/fee-endpoints"
+    def send_sms(self, sms_message, end_point):
+        _url = self.base_url + "/v1/sms/fee-notification"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {self.token}"
         }
-        _response = requests.get(url=_url, headers=headers)
-        _response.raise_for_status()
-        return _response.json()
+        with requests.Session() as session:
+            _response = session.post(url=_url,
+                                     headers=headers,
+                                     json=sms_message)
+            _response.raise_for_status()
+        return {
+            "id": sms_message['id'],
+            "endpoint": end_point
+        }

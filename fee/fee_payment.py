@@ -45,7 +45,7 @@ class FeePayment:
         }
 
         with requests.Session() as session:
-            _response = session.get(url=_url, json=payload, headers=headers)
+            _response = session.put(url=_url, json=payload, headers=headers)
             _response.raise_for_status()
             yield _response.json()
 
