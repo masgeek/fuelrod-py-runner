@@ -24,5 +24,6 @@ class SmsNotification:
             _response.raise_for_status()
         return {
             "id": sms_message['id'],
+            "username": sms_message['username'],
             "endpoint": end_point
         }

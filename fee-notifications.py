@@ -44,7 +44,11 @@ def process_sms_notifications(username, end_point, page_size, page_no=1):
 def update_sent_message(sms_future):
     sms = sms_future.result()
     print(json.dumps(sms, indent=4))
-    feeProcessing.update_sms_notification(message_id=sms['id'], endpoint=sms['endpoint'])
+    update_resp = feeProcessing.update_sms_notification(
+        message_id=sms['id'],
+        username=sms['username'],
+        endpoint=sms['endpoint'])
+    print(next(update_resp))
 
 
 if __name__ == "__main__":
@@ -54,19 +58,19 @@ if __name__ == "__main__":
         all_results = []
         sent_messages = []
         _page_number = 1
-        _page_size = 5
+        _page_size = 250
         _results = feeProcessing.process_notifications(username=__username, endpoint=__end_point, page_size=_page_size)
         resp_value = next(_results)
-        last_page = 3  # resp_value['last_page']
+        last_page = 5  # resp_value['last_page']
         # print(json.dumps(resp_value['links'], indent=4))
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
+            futures = {
                 executor.submit(process_sms_notifications,
                                 __username,
                                 __end_point,
                                 _page_size,
                                 _page_number) for _page_number in range(1, last_page + 1)
-            ]
+            }
             for future in concurrent.futures.as_completed(futures):
                 try:
                     results = future.result()
