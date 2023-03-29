@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
 from fee import fee_payment
-from fuelrod.fuelrod_api import SmsUser
+from fuelrod.fuelrod_api import SmsUser, MessagingService
 from fuelrod.sms_notification import SmsNotification
 
 from my_logger import MyLogger
@@ -19,8 +19,6 @@ api_pass = environ.get('SMS_API_PASS')
 fee_api_user = environ.get('FEE_API_USER')
 fee_api_pass = environ.get('FEE_API_PASS')
 log_level = environ.get('LOG_LEVEL', 'INFO')
-
-load_dotenv(verbose=True)
 debug_db = environ.get('DEBUG_DB', False)
 
 logging = MyLogger()

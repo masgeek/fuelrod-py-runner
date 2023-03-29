@@ -1,3 +1,4 @@
+import enum
 import json
 
 import requests
@@ -10,9 +11,25 @@ from requests import HTTPError
 cache = TTLCache(maxsize=100, ttl=86400)
 
 
+class MessageStatus(enum.Enum):
+    IN_PROGRESS = 'IN_PROGRESS'
+    COMPLETED = 'COMPLETED'
+    FAILED = 'FAILED'
+    MESSAGE_SENT = 'MESSAGE_SENT'
+    PAUSED_NO_CREDIT = 'PAUSED_NO_CREDIT'
+    UNPAID_INVOICES = 'UNPAID_INVOICES'
+    ACTIVE = 'ACTIVE'
+    DUPLICATE_MESSAGE = 'DUPLICATE_MESSAGE'
+    PAUSED = 'PAUSED'
+    INSUFFICIENT_CREDITS = 'INSUFFICIENT_CREDITS'
+    STATUS_PENDING = 'STATUS_PENDING'
+    SUCCESS = 'SUCCESS'
+    USER_OPTED_OUT = 'USER_OPTED_OUT'
+
+
 class SmsUser:
 
-    def __init__(self, fuelrod_base_url, my_logger=None):
+    def __init__(self, fuelrod_base_url, my_logger):
         self.base_url = fuelrod_base_url
         self.my_logger = my_logger
 
@@ -85,4 +102,8 @@ class SmsUser:
 
 
 class MessagingService:
+    def __init__(self, fuelrod_base_url, my_logger):
+        self.base_url = fuelrod_base_url
+        self.my_logger = my_logger
+
     pass

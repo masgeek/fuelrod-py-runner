@@ -2,21 +2,17 @@ import sqlalchemy
 from sqlalchemy import desc
 from sqlalchemy.orm import sessionmaker
 
-from MessageStatus import MessageStatus
+from fuelrod.fuelrod_api import MessageStatus
+from my_logger import MyDb, MyLogger
 from orm.fuelrod import MessageQueue, SmsCampaign
 
 
-class FuelrodQueue:
+class Campaign:
 
-    def __init__(self, db_engine, my_logger):
-        """
-
-        @param db_engine:
-        @param my_logger:
-        """
-        self.db_engine = db_engine
+    def __init__(self):
+        self.db_engine = MyDb()
         self.session = sessionmaker(bind=self.db_engine)
-        self.logging = my_logger
+        self.logging = MyLogger()
 
     def load_unprocessed_campaigns(self, campaign_status: MessageStatus, limit=1):
         self.logging.info(f"Loading campaigns with status {campaign_status.name} limited at {limit} records")
