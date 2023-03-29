@@ -1,14 +1,15 @@
 import concurrent.futures
 import json
-import logging
-import logging.config
 from os import environ, path
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
 from fee import fee_payment
-from fuelrod import sms_user, sms_notification
+from fuelrod.fuelrod_api import SmsUser
+from fuelrod.sms_notification import SmsNotification
+
+from my_logger import MyLogger
 
 load_dotenv(verbose=True)
 fuelrod_base_url = environ.get('SMS_BASE_URL')
@@ -19,32 +20,24 @@ fee_api_user = environ.get('FEE_API_USER')
 fee_api_pass = environ.get('FEE_API_PASS')
 log_level = environ.get('LOG_LEVEL', 'INFO')
 
-logfileError = path.join(path.dirname(path.abspath(__file__)), "logs/errors.log")
-logfileInfo = path.join(path.dirname(path.abspath(__file__)), "logs/info.log")
+load_dotenv(verbose=True)
+debug_db = environ.get('DEBUG_DB', False)
 
-c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler(logfileError, 'w', 'utf-8')
-f_info_handler = logging.FileHandler(logfileInfo, 'w', 'utf-8')
-c_handler.setLevel(logging.DEBUG)
-f_info_handler.setLevel(logging.INFO)
-f_handler.setLevel(logging.ERROR)
+logging = MyLogger()
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
-                    handlers=[c_handler, f_handler, f_info_handler],
-                    level=log_level)
+engine = create_engine("mysql://fuelrod:fuelrod@localhost/fuelrod",
+                       echo=debug_db,
+                       echo_pool=debug_db,
+                       hide_parameters=not debug_db)
 
-engine = create_engine("mysql://fuelrod:fuelrod@localhost/fuelrod", echo=True, echo_pool=False, hide_parameters=True)
-
-apiUser = sms_user.SmsUser()
+apiUser = SmsUser(fuelrod_base_url=fuelrod_base_url, my_logger=logging)
 feeProcessing = fee_payment.FeePayment(api_user=fee_api_user, api_pass=fee_api_pass, my_logger=logging)
 
-resp = apiUser.auth_token(username=api_username, password=api_pass)
-token = resp['accessToken']
+token = apiUser.auth_token(username=api_username, password=api_pass)
 
-fee_endpoints_resp = apiUser.fee_endpoints(token=token)
-fee_endpoints = fee_endpoints_resp['content']
+fee_endpoints = apiUser.fee_endpoints(token=token)
 
-smsNotification = sms_notification.SmsNotification(base_url=fuelrod_base_url, token=token)
+smsNotification = SmsNotification(base_url=fuelrod_base_url, token=token)
 
 
 def process_sms_notifications(username, end_point, page_size, page_no=1):

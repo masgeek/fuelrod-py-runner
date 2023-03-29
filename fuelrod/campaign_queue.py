@@ -7,19 +7,24 @@ from orm.fuelrod import MessageQueue, SmsCampaign
 
 
 class FuelrodQueue:
-    """
 
-    @param db_engine:
-    """
+    def __init__(self, db_engine, my_logger):
+        """
 
-    def __init__(self, db_engine):
+        @param db_engine:
+        @param my_logger:
+        """
         self.db_engine = db_engine
         self.session = sessionmaker(bind=self.db_engine)
+        self.logging = my_logger
 
-    def has_campaign(self, campaign_status: MessageStatus):
+    def load_unprocessed_campaigns(self, campaign_status: MessageStatus, limit=1):
+        self.logging.info(f"Loading campaigns with status {campaign_status.name} limited at {limit} records")
+
         return self.session().query(SmsCampaign) \
-            .filter_by(campaign_status=campaign_status) \
-            .one_or_none()
+            .filter_by(campaign_status=campaign_status.name) \
+            .limit(limit=limit) \
+            .all()
 
     # noinspection PyTypeChecker
     def update_campaign(self, campaign_id: int, status: MessageStatus):
@@ -33,11 +38,11 @@ class FuelrodQueue:
 
             my_session.add(sms_campaign)
             my_session.commit()
-            print(f"Updated campaign with status {status.name}")
+            self.logging.info(f"Updated campaign with status {status.name}")
             return True
         except Exception as ex:
             my_session.rollback()
-            print(f"An exception has occurred {ex}")
+            self.logging.critical(f"An exception has occurred {ex}")
         return False
 
     # noinspection PyTypeChecker
@@ -60,7 +65,7 @@ class FuelrodQueue:
 
         message: MessageQueue
         for message in messages:
-            print(f"Processing message {message_count} of {total_messages} length {message.sms_count}")
+            self.logging.info(f"Processing message {message_count} of {total_messages} length {message.sms_count}")
             message_count = message_count + 1
             message.message_status = MessageStatus.IN_PROGRESS.name
             my_session.add(message)
