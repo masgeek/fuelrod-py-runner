@@ -1,11 +1,10 @@
 import string
-from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
 from my_logger import MyLogger
-from orm.fuelrod import Users
 from orm.database_conn import MyDb
+from orm.fuelrod import Users
 
 
 class UserRepo:

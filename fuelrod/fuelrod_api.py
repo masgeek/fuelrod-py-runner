@@ -3,11 +3,8 @@ import json
 from calendar import timegm
 from datetime import datetime
 from os import environ
-import asyncio
-import time
-import aiohttp
-from aiohttp.client import ClientSession
 
+import aiohttp
 import requests
 from cachetools import cached, TTLCache
 from dotenv import load_dotenv

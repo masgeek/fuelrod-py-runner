@@ -1,14 +1,12 @@
 import concurrent.futures
 import json
-from os import environ, path
+from os import environ
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
 
 from fee import fee_payment
-from fuelrod.fuelrod_api import SmsUser, MessagingService
+from fuelrod.fuelrod_api import SmsUser
 from fuelrod.sms_notification import SmsNotification
-
 from my_logger import MyLogger
 
 load_dotenv(verbose=True)

@@ -1,9 +1,5 @@
-import logging
-from typing import Any
+from os import environ
 
-from colorlog import ColoredFormatter
-from os import path, mkdir, environ
-import datetime
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 

@@ -3,14 +3,12 @@ from os import environ
 
 from dotenv import load_dotenv
 
-from my_logger import MyLogger
-from fuelrod.fuelrod_api import MessageStatus, SmsUser, MessagingService
-from fuelrod.user_repo import UserRepo
 from fuelrod.campaign_repo import CampaignRepo
-from orm.fuelrod import Users
+from fuelrod.fuelrod_api import MessageStatus, SmsUser
+from fuelrod.user_repo import UserRepo
+from my_logger import MyLogger
 
 load_dotenv(verbose=True)
-debug_db = environ.get('DEBUG_DB', False)
 log_level = environ.get('LOG_LEVEL', 'INFO')
 api_username = environ.get('SMS_API_USER')
 api_pass = environ.get('SMS_API_PASS')
@@ -21,7 +19,7 @@ apiUser = SmsUser()
 token = apiUser.auth_token(username=api_username, password=api_pass)
 campaignRepo = CampaignRepo(fuelrod_token=token)
 userRepo = UserRepo()
-campaigns = campaignRepo.load_unprocessed_campaigns(campaign_status=MessageStatus.IN_PROGRESS, limit=1)
+campaigns = campaignRepo.load_unprocessed_campaigns(campaign_status=MessageStatus.IN_PROGRESS, limit=50)
 
 total_campaigns = len(campaigns)
 if total_campaigns <= 0:
