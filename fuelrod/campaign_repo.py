@@ -3,11 +3,12 @@ from sqlalchemy import desc
 from sqlalchemy.orm import sessionmaker
 
 from fuelrod.fuelrod_api import MessageStatus
-from my_logger import MyDb, MyLogger
+from my_logger import MyLogger
+from orm.database_conn import MyDb
 from orm.fuelrod import MessageQueue, SmsCampaign
 
 
-class Campaign:
+class CampaignRepo:
 
     def __init__(self):
         self.db_engine = MyDb()
@@ -25,6 +26,7 @@ class Campaign:
     # noinspection PyTypeChecker
     def update_campaign(self, campaign_id: int, status: MessageStatus):
         my_session = self.session()
+        is_saved = False
         try:
             sms_campaign: SmsCampaign = my_session.query(SmsCampaign) \
                 .filter(SmsCampaign.id == campaign_id) \
@@ -35,11 +37,15 @@ class Campaign:
             my_session.add(sms_campaign)
             my_session.commit()
             self.logging.info(f"Updated campaign with status {status.name}")
-            return True
+            is_saved = True
         except Exception as ex:
             my_session.rollback()
             self.logging.critical(f"An exception has occurred {ex}")
-        return False
+        finally:
+            self.logging.debug("Closing database session")
+            my_session.close()
+
+        return is_saved
 
     # noinspection PyTypeChecker
     def process_queue(self, campaign_id: int, limit: int = 200):

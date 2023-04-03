@@ -1,7 +1,5 @@
 import enum
 import json
-
-import requests
 from calendar import timegm
 from datetime import datetime
 import requests
@@ -33,6 +31,59 @@ class SmsUser:
         self.base_url = fuelrod_base_url
         self.my_logger = my_logger
 
+    def fee_endpoints(self, token):
+        _url = self.base_url + "/v1/fee-endpoints"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+        try:
+            with requests.session() as session:
+                _response = session.get(url=_url, headers=headers)
+                _response.raise_for_status()
+                resp = _response.json()
+                return resp['content']
+        except HTTPError as http_err:
+            self.my_logger.error(f'Unable to fetch fee endpoints -> {http_err}')
+        except Exception as err:
+            self.my_logger.error(f'Other error occurred -> {err}')
+
+    def credit_info(self, user_uuid, token):
+        _url = self.base_url + f"/v1/credit/user/{user_uuid}/summary"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+        credit_info = {
+            'canSend': False,
+            'smsLeft': 0,
+            'status': MessageStatus.PAUSED.name
+        }
+        try:
+            with requests.session() as session:
+                _response = session.get(url=_url, headers=headers)
+                _response.raise_for_status()
+                resp = _response.json()
+
+                overdraft_enabled = resp['overdraft']
+                sms_left = resp['smsLeft']
+
+                can_send = sms_left > 5 or overdraft_enabled
+                credit_info = {
+                    'canSend': can_send,
+                    'overdraft': resp['overdraft'],
+                    'smsLeft': 1000 if overdraft_enabled else sms_left,
+                    'status': MessageStatus.IN_PROGRESS.name if can_send else MessageStatus.PAUSED_NO_CREDIT.name,
+                    'smsCost': resp['cost'],
+                    'creditLeft': resp['creditLeft']
+                }
+        except HTTPError as http_err:
+            self.my_logger.error(f'Unable to fetch credit info -> {http_err}')
+        except Exception as err:
+            self.my_logger.error(f'Other error occurred -> {err}')
+
+        return credit_info
+
     @cached(cache=cache)
     def auth_token(self, username, password):
         self.my_logger.info(f"Authenticating user {username}")
@@ -61,23 +112,6 @@ class SmsUser:
             self.my_logger.error(f'Other error occurred {err}')
 
         return token
-
-    def fee_endpoints(self, token):
-        _url = self.base_url + "/v1/fee-endpoints"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}"
-        }
-        try:
-            with requests.session() as session:
-                _response = session.get(url=_url, headers=headers)
-                _response.raise_for_status()
-                resp = _response.json()
-                return resp['content']
-        except HTTPError as http_err:
-            self.my_logger.error(f'Unable to fetch fee endpoints -> {http_err}')
-        except Exception as err:
-            self.my_logger.error(f'Other error occurred -> {err}')
 
     def _read_token_file(self):
         token_json_file = f'token/fuelrod-token.json'
