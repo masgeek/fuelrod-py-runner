@@ -31,7 +31,7 @@ class MyLogger:
                     'DEBUG': 'bold_cyan',
                     'INFO': 'bold_green',
                     'WARNING': 'bold_yellow',
-                    'ERROR': 'red',
+                    'ERROR': 'bold_red',
                     'CRITICAL': 'bold_red,bg_white',
                 },
                 secondary_log_colors={},
