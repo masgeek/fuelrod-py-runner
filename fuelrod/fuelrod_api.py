@@ -4,7 +4,6 @@ from calendar import timegm
 from datetime import datetime
 from os import environ
 
-import aiohttp
 import requests
 from cachetools import cached, TTLCache
 from dotenv import load_dotenv
@@ -149,20 +148,6 @@ class MessagingService:
         self.base_url = fuelrod_base_url
         self.token = token
         self.logging = MyLogger()
-
-    async def send_campaigns(self, username, campaigns):
-        _url = f"{self.base_url}/v1/campaign/send-messages/{username}"
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.token}"
-        }
-
-        self.logging.debug(f"Message payload is \n{json.dumps(campaigns, indent=4)}")
-
-        async with aiohttp.ClientSession() as my_session:
-            async with my_session.post(url=_url, headers=headers, json=campaigns) as resp:
-                self.logging.debug("Send data")
 
     def send_campaign(self, username, campaigns):
         _url = f"{self.base_url}/v1/campaign/send-message/{campaigns['username']}"
