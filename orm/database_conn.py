@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from colorlog import ColoredFormatter
 from os import path, mkdir, environ
@@ -11,8 +12,11 @@ load_dotenv(verbose=True)
 
 class MyDb:
     db_engine = None
-    db_url = environ.get('DB_URL', 'mysql://fuelrod:fuelrod@localhost/fuelrod')
-    debug_db = environ.get('DEBUG_DB', False)
+    db_url: str = environ.get('DB_URL', 'mysql://fuelrod:fuelrod@localhost/fuelrod')
+    debug: str | None = environ.get('LOG_LEVEL', None)
+    debug_db = False
+    if debug == 'DEBUG':
+        debug_db = True
 
     def __new__(cls, *args, **kwargs):
         if cls.db_engine is None:

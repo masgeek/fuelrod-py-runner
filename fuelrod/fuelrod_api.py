@@ -2,11 +2,23 @@ import enum
 import json
 from calendar import timegm
 from datetime import datetime
+from os import environ
+import asyncio
+import time
+import aiohttp
+from aiohttp.client import ClientSession
+
 import requests
 from cachetools import cached, TTLCache
+from dotenv import load_dotenv
 from requests import HTTPError
 
+from my_logger import MyLogger
+
 cache = TTLCache(maxsize=100, ttl=86400)
+
+load_dotenv(verbose=True)
+fuelrod_base_url = environ.get('SMS_BASE_URL')
 
 
 class MessageStatus(enum.Enum):
@@ -27,9 +39,9 @@ class MessageStatus(enum.Enum):
 
 class SmsUser:
 
-    def __init__(self, fuelrod_base_url, my_logger):
+    def __init__(self):
         self.base_url = fuelrod_base_url
-        self.my_logger = my_logger
+        self.logging = MyLogger()
 
     def fee_endpoints(self, token):
         _url = self.base_url + "/v1/fee-endpoints"
@@ -44,9 +56,9 @@ class SmsUser:
                 resp = _response.json()
                 return resp['content']
         except HTTPError as http_err:
-            self.my_logger.error(f'Unable to fetch fee endpoints -> {http_err}')
+            self.logging.error(f'Unable to fetch fee endpoints -> {http_err}')
         except Exception as err:
-            self.my_logger.error(f'Other error occurred -> {err}')
+            self.logging.error(f'Other error occurred -> {err}')
 
     def credit_info(self, user_uuid, token):
         _url = self.base_url + f"/v1/credit/user/{user_uuid}/summary"
@@ -78,15 +90,15 @@ class SmsUser:
                     'creditLeft': resp['creditLeft']
                 }
         except HTTPError as http_err:
-            self.my_logger.error(f'Unable to fetch credit info -> {http_err}')
+            self.logging.error(f'Unable to fetch credit info -> {http_err}')
         except Exception as err:
-            self.my_logger.error(f'Other error occurred -> {err}')
+            self.logging.error(f'Other error occurred -> {err}')
 
         return credit_info
 
     @cached(cache=cache)
     def auth_token(self, username, password):
-        self.my_logger.info(f"Authenticating user {username}")
+        self.logging.info(f"Authenticating user {username}")
         _url = self.base_url + "/v1/account/auth"
 
         payload = {
@@ -95,26 +107,26 @@ class SmsUser:
         }
         token = self._read_token_file()
         if token is not None:
-            self.my_logger.debug("Found token in file using it instead of refreshing")
+            self.logging.debug("Found token in file using it instead of refreshing")
             return token
         try:
-            self.my_logger.debug("Fetching new token from aPI")
+            self.logging.debug("Fetching new token from aPI")
             _response = requests.post(url=_url, json=payload)
             _response.raise_for_status()
             resp = _response.json()
-            with open(f'token/fuelrod-token.json', 'w') as json_file_obj:
+            with open('token/fuelrod-token.json', 'w') as json_file_obj:
                 json.dump(resp, json_file_obj, indent=4)
 
             token = resp['accessToken']
         except HTTPError as http_err:
-            self.my_logger.error(f'Unable to authenticate user {http_err}')
+            self.logging.error(f'Unable to authenticate user {http_err}')
         except Exception as err:
-            self.my_logger.error(f'Other error occurred {err}')
+            self.logging.error(f'Other error occurred {err}')
 
         return token
 
     def _read_token_file(self):
-        token_json_file = f'token/fuelrod-token.json'
+        token_json_file = 'token/fuelrod-token.json'
         token = None
         try:
             with open(token_json_file, 'r') as json_file_obj:
@@ -127,17 +139,54 @@ class SmsUser:
                 token_expired = current_time > expiry_time
                 if token_expired:
                     token = None
-                    self.my_logger.info(f'Token has expired at {expiry_time}')
+                    self.logging.info(f'Token has expired at {expiry_time}')
 
         except Exception as err:
-            self.my_logger.critical(f'Error reading {token_json_file} file {err}')
+            self.logging.critical(f'Error reading {token_json_file} file {err}')
 
         return token
 
 
 class MessagingService:
-    def __init__(self, fuelrod_base_url, my_logger):
+    def __init__(self, token):
         self.base_url = fuelrod_base_url
-        self.my_logger = my_logger
+        self.token = token
+        self.logging = MyLogger()
 
-    pass
+    async def send_campaigns(self, username, campaigns):
+        _url = f"{self.base_url}/v1/campaign/send-messages/{username}"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.token}"
+        }
+
+        self.logging.debug(f"Message payload is \n{json.dumps(campaigns, indent=4)}")
+
+        async with aiohttp.ClientSession() as my_session:
+            async with my_session.post(url=_url, headers=headers, json=campaigns) as resp:
+                self.logging.debug("Send data")
+
+    def send_campaign(self, username, campaigns):
+        _url = f"{self.base_url}/v1/campaign/send-message/{campaigns['username']}"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.token}"
+        }
+
+        self.logging.debug(f"Message payload is \n{json.dumps(campaigns, indent=4)}")
+        try:
+            with requests.session() as session:
+                _response = session.post(url=_url, json=campaigns, headers=headers)
+                _response.raise_for_status()
+                resp = _response.json()
+
+                self.logging.info(f"Message payload response \n{json.dumps(resp, indent=4)}")
+
+        except HTTPError as http_err:
+            self.logging.error(f'Unable send campaign message -> {http_err.response} : {http_err.response.text}')
+            raise HTTPError
+        except Exception as err:
+            self.logging.critical(f'Other error occurred -> {err}')
+            raise

@@ -9,7 +9,7 @@ from fee import fee_payment
 from fuelrod.fuelrod_api import SmsUser, MessagingService
 from fuelrod.sms_notification import SmsNotification
 
-from my_logger import MyLogger, MyDb
+from my_logger import MyLogger
 
 load_dotenv(verbose=True)
 fuelrod_base_url = environ.get('SMS_BASE_URL')
@@ -23,7 +23,7 @@ debug_db = environ.get('DEBUG_DB', False)
 
 logging = MyLogger()
 
-apiUser = SmsUser(fuelrod_base_url=fuelrod_base_url, my_logger=logging)
+apiUser = SmsUser()
 feeProcessing = fee_payment.FeePayment(api_user=fee_api_user, api_pass=fee_api_pass, my_logger=logging)
 
 token = apiUser.auth_token(username=api_username, password=api_pass)
