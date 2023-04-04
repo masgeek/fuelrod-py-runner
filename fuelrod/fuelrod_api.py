@@ -64,7 +64,7 @@ class SmsUser:
         credit_info = {
             "canSend": False,
             "smsLeft": 0,
-            "status": MessageStatus.PAUSED.name,
+            # "status": MessageStatus.PAUSED.name,
         }
         try:
             with requests.session() as session:
@@ -147,7 +147,7 @@ class MessagingService:
         self.token = token
         self.logging = MyLogger()
 
-    def send_campaign(self, username, campaigns):
+    def send_campaign(self, campaigns):
         _url = f"{self.base_url}/v1/campaign/send-message/{campaigns['username']}"
 
         headers = {
@@ -161,6 +161,7 @@ class MessagingService:
                 _response = session.post(url=_url, json=campaigns, headers=headers)
                 _response.raise_for_status()
                 resp = _response.json()
+                resp["record_id"] = campaigns["id"]
 
                 self.logging.info(
                     f"Message payload response \n{json.dumps(resp, indent=4)}"
@@ -171,7 +172,5 @@ class MessagingService:
             self.logging.error(
                 f"Unable send campaign message -> {http_err.response} : {http_err.response.text}"
             )
-            raise HTTPError
         except Exception as err:
             self.logging.critical(f"Other error occurred -> {err}")
-            raise

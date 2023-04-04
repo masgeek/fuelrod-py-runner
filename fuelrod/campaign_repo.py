@@ -1,7 +1,7 @@
 import concurrent.futures
 import json
 import string
-import time
+from timeit import default_timer as timer
 
 import sqlalchemy
 from sqlalchemy import desc
@@ -86,9 +86,9 @@ class CampaignRepo:
                 )
             else:
                 msg: MessageQueue
+                start = timer()
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     campaign_payload = []
-                    start = time.time()
                     for msg in messages:
                         self.logging.info(
                             f"Processing message {message_count} of {total_messages} length {msg.sms_count}"
@@ -102,21 +102,20 @@ class CampaignRepo:
                             "campaign_id": campaign_id,
                             "message": msg.message,
                             "phone_number": msg.phone_number,
-                            "hash": msg.message_hash,
+                            "message_hash": msg.message_hash,
                         }
                         campaign_payload.append(_payload)
 
                         _result = executor.submit(
-                            self.msg_service.send_campaign, username, _payload
+                            self.msg_service.send_campaign, _payload
                         )
-                        _result.add_done_callback(self.send_campaign, msg)
+                        _result.add_done_callback(self.send_campaign)
 
-                    end = time.time()
-                self.logging.debug(f"Campaign processed in {abs(end - start)}")
-
-            # my_session.commit()
+                end = timer()
+                self.logging.info(
+                    f"Campaign processed in {round(end - start, 2)} seconds"
+                )
         except Exception as ex:
-            # my_session.rollback()
             self.logging.critical(
                 f"An exception has occurred {ex}. rolling back transactions"
             )
@@ -124,7 +123,38 @@ class CampaignRepo:
             self.logging.debug("Closing database session")
             my_session.close()
 
-    def send_campaign(self, sms_future, msg):
-        # with Session(self.db_engine) as _the_session:
-        #     _the_session.add(msg)
-        self.logging.debug(f"Message payload is \n{json.dumps(msg, indent=4)}")
+    def send_campaign(self, sms_future):
+        campaign_result = sms_future.result()
+        self.logging.debug(
+            f"Callback data is \n{json.dumps(campaign_result, indent=4)}"
+        )
+        if campaign_result is not None:
+            status = campaign_result["details"]["status"]
+            try:
+                with Session(self.db_engine) as _the_session:
+                    msg = self.find_one(
+                        session=_the_session, pk=campaign_result["record_id"]
+                    )
+                    msg.message_status = status
+                    msg.message_sent = (
+                        True if status == MessageStatus.SUCCESS.name else False,
+                    )
+                    msg.failure_reason = (
+                        None if status == MessageStatus.SUCCESS.name else status,
+                    )
+                    msg.retry_count = msg.retry_count + 1
+                    msg.updated_at = sqlalchemy.func.now()
+                    _the_session.commit()
+                    self.logging.debug(
+                        f"Record id {msg.id} for "
+                        f"campaign id `{msg.campaign.campaign_name.upper()}` "
+                        f"updated with status {msg.message_status}"
+                    )
+            except Exception as ex:
+                self.logging.critical(
+                    f"An exception has occurred {ex}. rolling back transactions"
+                )
+
+    # noinspection PyMethodMayBeStatic
+    def find_one(self, session, pk: int) -> MessageQueue:
+        return session.query(MessageQueue).filter(MessageQueue.id == pk).first()

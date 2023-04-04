@@ -30,21 +30,24 @@ else:
     logging.info(f"Processing {total_campaigns} campaign(s)")
     for campaign in campaigns:
         user = userRepo.load_user(campaign.user_uuid)
-        if user.flag_reason == MessageStatus.ACTIVE.name:
+        if user is not None and user.flag_reason == MessageStatus.ACTIVE.name:
             logging.info(f"Processing message for {user.client_name}")
             creditInfo = apiUser.credit_info(user_uuid=user.uuid, token=token)
             logging.debug(f"The credit info is \n{json.dumps(creditInfo, indent=4)}")
 
-            status_string = creditInfo["status"]
-            status_enum = MessageStatus.__getitem__(status_string)
+            if "status" in creditInfo:
+                status_string = creditInfo["status"]
+                status_enum = MessageStatus.__getitem__(status_string)
+                campaignRepo.update_campaign(campaign.id, status_enum)
 
-            campaignRepo.update_campaign(campaign.id, status_enum)
-            if creditInfo["canSend"]:
-                logging.info(f"Processing campaign `{campaign.campaign_name.upper()}`")
-                campaignRepo.process_queue(
-                    campaign_id=campaign.id, username=user.username, limit=100
-                )
-            else:
-                logging.warning(
-                    "Cannot process this campaign due to insufficient credits"
-                )
+                if creditInfo["canSend"]:
+                    logging.info(
+                        f"Processing campaign `{campaign.campaign_name.upper()}`"
+                    )
+                    campaignRepo.process_queue(
+                        campaign_id=campaign.id, username=user.username, limit=4
+                    )
+                else:
+                    logging.warning(
+                        "Cannot process this campaign due to insufficient credits"
+                    )
