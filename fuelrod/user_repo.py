@@ -14,6 +14,4 @@ class UserRepo:
         self.logging = MyLogger()
 
     def load_user(self, user_uuid: string) -> Users | None:
-        return self.session().query(Users) \
-            .filter(Users.uuid == user_uuid) \
-            .first()
+        return self.session().query(Users).filter(Users.uuid == user_uuid).first()
