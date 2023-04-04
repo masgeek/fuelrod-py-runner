@@ -94,8 +94,6 @@ class CampaignRepo:
                             f"Processing message {message_count} of {total_messages} length {msg.sms_count}"
                         )
                         message_count = message_count + 1
-                        msg.message_sent = True
-                        msg.message_status = MessageStatus.MESSAGE_SENT.name
                         _payload = {
                             "id": msg.id,
                             "username": username,

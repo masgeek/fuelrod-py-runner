@@ -45,7 +45,7 @@ else:
                         f"Processing campaign `{campaign.campaign_name.upper()}`"
                     )
                     campaignRepo.process_queue(
-                        campaign_id=campaign.id, username=user.username, limit=4
+                        campaign_id=campaign.id, username=user.username
                     )
                 else:
                     logging.warning(
