@@ -123,9 +123,7 @@ class CampaignRepo:
 
     def send_campaign(self, sms_future):
         campaign_result = sms_future.result()
-        self.logging.debug(
-            f"Callback data is \n{json.dumps(campaign_result, indent=4)}"
-        )
+        self.logging.info(f"Callback data is \n{json.dumps(campaign_result, indent=4)}")
         if campaign_result is not None:
             status = campaign_result["details"]["status"]
             try:

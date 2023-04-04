@@ -163,7 +163,7 @@ class MessagingService:
                 resp = _response.json()
                 resp["record_id"] = campaigns["id"]
 
-                self.logging.info(
+                self.logging.debug(
                     f"Message payload response \n{json.dumps(resp, indent=4)}"
                 )
                 return resp
